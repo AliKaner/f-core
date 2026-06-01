@@ -159,23 +159,26 @@ function usePlatformData(speed: number) {
   const tickRef = useRef(0);
 
   useEffect(() => {
-    const bl: BlobData[] = [];
-    [8, 15, 21, 79, 85, 92].forEach((cx) =>
-      bl.push({ x: cx, y: 42 + jitter(16), r: lerp(74, 122, Math.random()), int: lerp(0.6, 1, Math.random()), hot: true })
-    );
-    for (let i = 0; i < 5; i++)
-      bl.push({ x: lerp(33, 67, Math.random()), y: 44 + jitter(18), r: lerp(52, 92, Math.random()), int: lerp(0.16, 0.4, Math.random()), hot: false });
-    setBlobs(bl);
+    const handle = setTimeout(() => {
+      const bl: BlobData[] = [];
+      [8, 15, 21, 79, 85, 92].forEach((cx) =>
+        bl.push({ x: cx, y: 42 + jitter(16), r: lerp(74, 122, Math.random()), int: lerp(0.6, 1, Math.random()), hot: true })
+      );
+      for (let i = 0; i < 5; i++)
+        bl.push({ x: lerp(33, 67, Math.random()), y: 44 + jitter(18), r: lerp(52, 92, Math.random()), int: lerp(0.16, 0.4, Math.random()), hot: false });
+      setBlobs(bl);
 
-    const dd: DotData[] = [];
-    for (let i = 0; i < 80; i++) {
-      const end = Math.random() < 0.62;
-      const x = end
-        ? (Math.random() < 0.5 ? lerp(3, 26, Math.random()) : lerp(74, 97, Math.random()))
-        : lerp(28, 72, Math.random());
-      dd.push({ x, y: lerp(22, 76, Math.random()), hot: end && Math.random() < 0.7 });
-    }
-    setDots(dd);
+      const dd: DotData[] = [];
+      for (let i = 0; i < 80; i++) {
+        const end = Math.random() < 0.62;
+        const x = end
+          ? (Math.random() < 0.5 ? lerp(3, 26, Math.random()) : lerp(74, 97, Math.random()))
+          : lerp(28, 72, Math.random());
+        dd.push({ x, y: lerp(22, 76, Math.random()), hot: end && Math.random() < 0.7 });
+      }
+      setDots(dd);
+    }, 0);
+    return () => clearTimeout(handle);
   }, []);
 
   useEffect(() => {

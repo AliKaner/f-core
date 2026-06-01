@@ -9,9 +9,14 @@ function useClock() {
   const [time, setTime] = useState<Date | null>(null);
   
   useEffect(() => {
-    setTime(new Date());
+    const handle = setTimeout(() => {
+      setTime(new Date());
+    }, 0);
     const id = setInterval(() => setTime(new Date()), 1000);
-    return () => clearInterval(id);
+    return () => {
+      clearTimeout(handle);
+      clearInterval(id);
+    };
   }, []);
 
   return time;

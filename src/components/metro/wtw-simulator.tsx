@@ -193,13 +193,16 @@ function useWtwSim({ lambda, arrival, nhat, dd, speed }: { lambda: number; arriv
   const [meanK, setMeanK] = useState(2.6);
   const tickRef = useRef(0);
 
-  useEffect(() => {
+  const [prevNhat, setPrevNhat] = useState(nhat);
+
+  if (nhat !== prevNhat) {
+    setPrevNhat(nhat);
     setQ((prev) => {
       const a = Array(nhat).fill(0);
       for (let i = 0; i < Math.min(nhat, prev.length); i++) a[i] = prev[i];
       return a;
     });
-  }, [nhat]);
+  }
 
   useEffect(() => {
     const id = setInterval(() => {
