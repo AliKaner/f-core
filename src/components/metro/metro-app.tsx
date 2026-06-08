@@ -24,7 +24,7 @@ function useClock() {
 
 export default function MetroApp() {
   const [activeTab, setActiveTab] = useState<"monitor" | "sim">("monitor");
-  const [tweaks, setTweaks] = useState({ tickSpeed: 1.0, heatIntensity: 1.0 });
+  const [tweaks, setTweaks] = useState({ tickSpeed: 1.0, heatIntensity: 1.0, isPaused: false, paxArrivalEnabled: true });
   const time = useClock();
 
   const renderClock = () => {
@@ -70,6 +70,55 @@ export default function MetroApp() {
         </nav>
 
         <div className="spacer" />
+
+        {/* Simulation Controls (Play/Pause & Passenger Influx Toggles) */}
+        <div style={{ display: "flex", gap: "8px", alignItems: "center", marginRight: "16px" }}>
+          <button
+            onClick={() => setTweaks((t) => ({ ...t, isPaused: !t.isPaused }))}
+            style={{
+              background: tweaks.isPaused ? "rgba(255,176,46,0.15)" : "rgba(46,155,255,0.12)",
+              border: tweaks.isPaused ? "1px solid var(--amber)" : "1px solid rgba(46,155,255,0.3)",
+              color: tweaks.isPaused ? "var(--amber)" : "var(--blue)",
+              borderRadius: "6px",
+              padding: "6px 12px",
+              fontSize: "11px",
+              fontWeight: "bold",
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              gap: "6px",
+              height: "28px",
+              transition: "0.15s",
+            }}
+            title={tweaks.isPaused ? "Resume Simulation" : "Pause Simulation"}
+          >
+            <Icon name={tweaks.isPaused ? "play" : "pause"} size={11} />
+            <span>{tweaks.isPaused ? "RESUME" : "PAUSE"}</span>
+          </button>
+
+          <button
+            onClick={() => setTweaks((t) => ({ ...t, paxArrivalEnabled: !t.paxArrivalEnabled }))}
+            style={{
+              background: tweaks.paxArrivalEnabled ? "rgba(25,211,197,0.12)" : "rgba(120,160,200,0.08)",
+              border: tweaks.paxArrivalEnabled ? "1px solid var(--teal)" : "1px solid var(--line-2)",
+              color: tweaks.paxArrivalEnabled ? "var(--teal)" : "var(--muted)",
+              borderRadius: "6px",
+              padding: "6px 12px",
+              fontSize: "11px",
+              fontWeight: "bold",
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              gap: "6px",
+              height: "28px",
+              transition: "0.15s",
+            }}
+            title={tweaks.paxArrivalEnabled ? "Turn off passenger inflow" : "Turn on passenger inflow"}
+          >
+            <Icon name="flow" size={11} />
+            <span>{tweaks.paxArrivalEnabled ? "INFLOW: ON" : "INFLOW: OFF"}</span>
+          </button>
+        </div>
 
         {/* Global Tweaks Controls (Inline Desktop Header) */}
         <div style={{ display: "flex", gap: "16px", alignItems: "center", marginRight: "16px" }} className="topbar-tweaks">

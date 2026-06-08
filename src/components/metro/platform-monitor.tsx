@@ -143,7 +143,7 @@ function Kpi({ label, val, unit, accent, trend, trendUp }: KpiProps) {
   );
 }
 
-function usePlatformData(speed: number) {
+function usePlatformData(speed: number, isPaused: boolean, paxArrivalEnabled: boolean) {
   const [blobs, setBlobs] = useState<BlobData[]>([]);
   const [dots, setDots] = useState<DotData[]>([]);
   const [cars, setCars] = useState<CarData[]>(() =>
@@ -152,7 +152,7 @@ function usePlatformData(speed: number) {
   const [queues, setQueues] = useState<number[]>(() =>
     Array.from({ length: 24 }, (_, i) => {
       const d = Math.min(i, 23 - i);
-      return Math.round(16 - d * 1.1 + jitter(2));
+      return Math.round(16 - d * 1.1);
     })
   );
   const [boarding, setBoarding] = useState(112);
@@ -177,11 +177,15 @@ function usePlatformData(speed: number) {
         dd.push({ x, y: lerp(22, 76, Math.random()), hot: end && Math.random() < 0.7 });
       }
       setDots(dd);
+
+      // Randomize queues on client to prevent SSR mismatch
+      setQueues((qs) => qs.map((q) => clamp(Math.round(q + jitter(2)), 0, 20)));
     }, 0);
     return () => clearTimeout(handle);
   }, []);
 
   useEffect(() => {
+    if (isPaused) return;
     const id = setInterval(() => {
       tickRef.current++;
       const t = tickRef.current;
@@ -189,28 +193,35 @@ function usePlatformData(speed: number) {
       setDots((ds) => ds.map((d) => ({ ...d, x: clamp(d.x + jitter(2.6), 2, 98), y: clamp(d.y + jitter(3.4), 18, 80) })));
       const depart = t % 9 === 0;
       setCars((cs) => cs.map((c) => {
-        const count = depart ? Math.round(lerp(120, 200, Math.random())) : clamp(c.count + Math.round(jitter(18) + 6), 90, 298);
-        const doorQ = c.doorQ.map((q) => clamp(Math.round(q + jitter(2.4) + (depart ? -3 : 1)), 0, 14));
+        const change = paxArrivalEnabled ? Math.round(jitter(18) + 6) : 0;
+        const count = depart ? Math.round(lerp(120, 200, Math.random())) : clamp(c.count + change, 90, 298);
+        const qInflow = paxArrivalEnabled ? 1 : 0;
+        const doorQ = c.doorQ.map((q) => clamp(Math.round(q + jitter(2.4) + (depart ? -3 : qInflow)), 0, 14));
         return { ...c, count, doorQ };
       }));
       setQueues((qs) => qs.map((q, i) => {
         const d = Math.min(i, 23 - i);
         const base = 16 - d * 1.05;
-        return depart
-          ? Math.max(0, Math.round(base * 0.35 + jitter(2)))
-          : clamp(q + Math.round((base - q) * 0.3 + jitter(2.2) + 1.2), 0, 20);
+        if (depart) {
+          return Math.max(0, Math.round(base * 0.35 + jitter(2)));
+        }
+        if (paxArrivalEnabled) {
+          return clamp(q + Math.round((base - q) * 0.3 + jitter(2.2) + 1.2), 0, 20);
+        } else {
+          return clamp(q + Math.round(jitter(1.2)), 0, 20);
+        }
       }));
-      setBoarding((b) => clamp(Math.round(depart ? 168 : b + jitter(14)), 60, 190));
+      setBoarding((b) => clamp(Math.round(depart ? 168 : (paxArrivalEnabled ? b + jitter(14) : b * 0.95 + jitter(4))), 0, 190));
     }, clamp(2200 / speed, 700, 4000));
     return () => clearInterval(id);
-  }, [speed]);
+  }, [speed, isPaused, paxArrivalEnabled]);
 
-  return { blobs, dots, cars, queues, boarding };
+  return { blobs, dots, cars, setCars, queues, boarding };
 }
 
-export default function PlatformMonitor({ tweaks }: { tweaks: { tickSpeed: number; heatIntensity: number } }) {
+export default function PlatformMonitor({ tweaks }: { tweaks: { tickSpeed: number; heatIntensity: number; isPaused: boolean; paxArrivalEnabled: boolean } }) {
   const speed = tweaks.tickSpeed ?? 1;
-  const { blobs, dots, cars, queues, boarding } = usePlatformData(speed);
+  const { blobs, dots, cars, setCars, queues, boarding } = usePlatformData(speed, tweaks.isPaused, tweaks.paxArrivalEnabled);
   const totalPax = cars.reduce((s, c) => s + c.count, 0) + queues.reduce((a, b) => a + b, 0);
   const crowd = clamp(Math.round((cars.reduce((s, c) => s + c.count / c.cap, 0) / 6) * 100), 0, 100);
   const [next, setNext] = useState(95);
@@ -252,6 +263,83 @@ export default function PlatformMonitor({ tweaks }: { tweaks: { tickSpeed: numbe
           </div>
           <div style={{ padding: 14 }}>
             <TrainDiagram cars={cars} />
+            
+            {/* Carriage Operations Console */}
+            <div style={{ marginTop: "18px", paddingTop: "14px", borderTop: "1px solid var(--line)" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "10px" }}>
+                <span className="ico" style={{ color: "var(--teal)", display: "grid", placeItems: "center" }}><Icon name="grid" size={14} /></span>
+                <h3 style={{ fontSize: "11px", fontWeight: "600", letterSpacing: "0.5px", textTransform: "uppercase", color: "var(--teal)" }}>Carriage Operations Console</h3>
+              </div>
+              
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: "8px" }}>
+                {cars.map((car, idx) => (
+                  <div key={idx} style={{ background: "var(--panel-3)", border: "1px solid var(--line)", borderRadius: "6px", padding: "8px", display: "flex", flexDirection: "column", gap: "6px" }}>
+                    <div style={{ fontFamily: "var(--fs-mono)", fontSize: "10px", fontWeight: "bold", color: "var(--text)", borderBottom: "1px solid var(--line)", paddingBottom: "4px", textAlign: "center" }}>
+                      CAR {idx + 1}
+                    </div>
+                    <div>
+                      <div style={{ fontSize: "9px", color: "var(--muted)", textTransform: "uppercase" }}>Pax</div>
+                      <input
+                        type="number"
+                        min="0"
+                        max={car.cap}
+                        value={car.count}
+                        onChange={(e) => {
+                          const val = parseInt(e.target.value) || 0;
+                          setCars((cs) => {
+                            const nextCs = [...cs];
+                            nextCs[idx] = { ...nextCs[idx], count: clamp(val, 0, nextCs[idx].cap) };
+                            return nextCs;
+                          });
+                        }}
+                        style={{
+                          width: "100%",
+                          background: "var(--bg-deep)",
+                          border: "1px solid var(--line)",
+                          borderRadius: "4px",
+                          color: "var(--text)",
+                          padding: "2px 4px",
+                          fontSize: "11px",
+                          fontFamily: "var(--fs-mono)",
+                          outline: "none"
+                        }}
+                      />
+                    </div>
+                    <div>
+                      <div style={{ fontSize: "9px", color: "var(--muted)", textTransform: "uppercase" }}>Cap</div>
+                      <input
+                        type="number"
+                        min="50"
+                        max="500"
+                        value={car.cap}
+                        onChange={(e) => {
+                          const val = parseInt(e.target.value) || 100;
+                          setCars((cs) => {
+                            const nextCs = [...cs];
+                            const cap = clamp(val, 50, 500);
+                            const count = clamp(nextCs[idx].count, 0, cap);
+                            nextCs[idx] = { ...nextCs[idx], cap, count };
+                            return nextCs;
+                          });
+                        }}
+                        style={{
+                          width: "100%",
+                          background: "var(--bg-deep)",
+                          border: "1px solid var(--line)",
+                          borderRadius: "4px",
+                          color: "var(--text)",
+                          padding: "2px 4px",
+                          fontSize: "11px",
+                          fontFamily: "var(--fs-mono)",
+                          outline: "none"
+                        }}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
             <div className="legend" style={{ marginTop: 14, justifyContent: "center" }}>
               {([["< 55% comfortable", "#33d68a"], ["55–78% busy", "#ffb02e"], ["> 78% crowded", "#ff4d4d"]] as [string, string][]).map(([t, c]) => (
                 <div key={t} className="lg"><span className="sw" style={{ background: c }} />{t}</div>

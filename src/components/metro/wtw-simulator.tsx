@@ -120,10 +120,57 @@ function Frac({ top, bot }: { top: React.ReactNode; bot: React.ReactNode }) {
   return <span className="frac"><span className="top">{top}</span><span className="bot">{bot}</span></span>;
 }
 
-function FormulaCard({ tag, title, children, calib }: { tag: string; title: string; children: React.ReactNode; calib?: string }) {
+function InfoTooltip({ text }: { text: string }) {
+  const [hovered, setHovered] = useState(false);
+  return (
+    <span 
+      style={{ position: "relative", display: "inline-flex", alignItems: "center", cursor: "help", marginLeft: "6px" }}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+    >
+      <span style={{ color: "var(--muted-2)", display: "inline-flex", opacity: 0.85 }}>
+        <Icon name="info" size={12} />
+      </span>
+      {hovered && (
+        <span style={{
+          position: "absolute",
+          top: "100%",
+          left: "auto",
+          right: "0",
+          marginTop: "6px",
+          background: "#0c1c2d",
+          border: "1px solid var(--blue)",
+          color: "var(--text)",
+          padding: "8px 12px",
+          borderRadius: "6px",
+          fontSize: "11px",
+          width: "240px",
+          lineHeight: "1.4",
+          boxShadow: "0 6px 16px rgba(0,0,0,0.6)",
+          zIndex: 9999,
+          pointerEvents: "none",
+          fontWeight: "normal",
+          fontFamily: "var(--fs-sans)",
+          textAlign: "left",
+          whiteSpace: "normal"
+        }}>
+          {text}
+        </span>
+      )}
+    </span>
+  );
+}
+
+function FormulaCard({ tag, title, children, calib, info }: { tag: string; title: string; children: React.ReactNode; calib?: string; info?: string }) {
   return (
     <div className="formula-card">
-      <div className="fc-h"><span className="fc-tag">{tag}</span><span className="fc-title">{title}</span></div>
+      <div className="fc-h" style={{ display: "flex", alignItems: "center" }}>
+        <span className="fc-tag">{tag}</span>
+        <span className="fc-title" style={{ display: "inline-flex", alignItems: "center" }}>
+          {title}
+          {info && <InfoTooltip text={info} />}
+        </span>
+      </div>
       <div className="math">{children}</div>
       {calib && <div className="calibchip">{calib}</div>}
     </div>
@@ -132,40 +179,89 @@ function FormulaCard({ tag, title, children, calib }: { tag: string; title: stri
 
 function ModelReference({ open, onToggle, params }: { open: boolean; onToggle: () => void; params: CalibParams }) {
   return (
-    <div className="panel modelref" style={{ width: open ? 366 : 52, flex: "0 0 auto", transition: "width .3s ease" }}>
-      <div className="panel-h" style={{ cursor: "pointer" }} onClick={onToggle}>
-        <span className="ico"><Icon name="book" size={17} /></span>
-        {open && <h2>Model Reference</h2>}
-        <button className="collapse-btn" style={{ marginLeft: "auto", transform: open ? "none" : "rotate(180deg)" }}>
-          <Icon name="chevron" size={15} />
-        </button>
+    <div className="panel modelref" style={{ width: open ? 366 : 52, flex: "0 0 auto", transition: "width .3s ease", overflow: "hidden" }}>
+      <div className="panel-h" style={{ cursor: "pointer", padding: open ? "12px 16px" : "12px 0", justifyContent: "center" }} onClick={onToggle}>
+        {open ? (
+          <>
+            <span className="ico"><Icon name="book" size={17} /></span>
+            <h2>Model Reference</h2>
+            <button className="collapse-btn" style={{ marginLeft: "auto", transform: "none" }}>
+              <Icon name="chevron" size={15} />
+            </button>
+          </>
+        ) : (
+          <span className="ico" style={{ display: "grid", placeItems: "center", color: "var(--blue)" }} title="Expand Model Reference">
+            <Icon name="book" size={17} />
+          </span>
+        )}
       </div>
       {open && (
         <div style={{ padding: 14, overflow: "auto" }}>
-          <FormulaCard tag="A2" title="Decision rule">
+          <FormulaCard 
+            tag="A2" 
+            title="Decision rule"
+            info="Passenger chooses walking if willingness-to-walk is greater than distance penalty and queue length cost."
+          >
             If <span className="fn">W</span>(<span className="var">k</span>) <span className="op">≥</span> <span className="var">d</span><sub>n</sub> <span className="op">+</span> <span className="var">λ</span><span className="op">·</span><span className="var">q</span><sub>n</sub> &nbsp;→&nbsp; walk to queue&nbsp;<span className="var">n</span><br />
             <span style={{ color: "var(--muted)" }}>otherwise</span> &nbsp;→&nbsp; stay in queue&nbsp;<span className="num">1</span>
           </FormulaCard>
 
-          <FormulaCard tag="SEL" title="Queue selection">
+          <FormulaCard 
+            tag="SEL" 
+            title="Queue selection"
+            info="Selects the highest queue index n where willingness-to-walk outweighs combined cost. Falls back to queue 1 if none."
+          >
             <span className="var">N</span> <span className="op">=</span> <span className="num">1</span>&nbsp;&nbsp;<span style={{ color: "var(--muted)" }}>if</span>&nbsp; <span className="fn">W</span>(<span className="var">k</span>) <span className="op">≤</span> <span className="var">d</span><sub>1</sub><span className="op">+</span><span className="var">λq</span><sub>1</sub><br />
             <span className="var">N</span> <span className="op">=</span> max&#123;<span className="var">n</span><span className="op">=</span>2…<span className="var">n̂</span> <span className="op">|</span> <span className="fn">W</span>(<span className="var">k</span>) <span className="op">&gt;</span> <span className="var">d</span><sub>n</sub><span className="op">+</span><span className="var">λq</span><sub>n</sub>&#125;<br />
             <span style={{ color: "var(--muted)", fontSize: 12 }}>where&nbsp;</span><span className="var">d</span><sub>n</sub> <span className="op">=</span> <span className="var">Δd</span><span className="op">·</span>(<span className="var">n</span><span className="op">−</span><span className="num">1</span>)
           </FormulaCard>
 
-          <FormulaCard tag="WLSM" title="Sigmoid willingness-to-walk" calib={`θ = [${params.t1}, ${params.t2}, ${params.t3}, ${params.t4}]  ·  WLSM best-fit`}>
+          <FormulaCard 
+            tag="WLSM" 
+            title="Sigmoid willingness-to-walk" 
+            calib={`θ = [${params.t1}, ${params.t2}, ${params.t3}, ${params.t4}]  ·  WLSM best-fit`}
+            info="Models decline in willingness-to-walk as platform distance index k increases. Calibrated via WLS method."
+          >
             <span className="fn">W</span>(<span className="var">k</span>) <span className="op">=</span> <span className="var">θ</span><sub>1</sub> <span className="op">+</span> <Frac top={<span><span className="var">θ</span><sub>2</sub></span>} bot={<span><span className="num">1</span><span className="op">+</span><span className="var">θ</span><sub>3</sub><span className="op">·</span><span className="fn">e</span><sup><span className="op">−</span><span className="var">θ</span><sub>4</sub><span className="var">k</span></sup></span>} />
             <div style={{ marginTop: 8, fontSize: 12.5, color: "var(--green)" }}>
               <span className="fn">W</span>(<span className="var">k</span>) <span className="op">=</span> <span className="num">68.41</span> <span className="op">+</span> <Frac top={<span className="num">22.61</span>} bot={<span><span className="num">1</span><span className="op">+</span><span className="num">71.63</span><span className="op">·</span><span className="fn">e</span><sup><span className="op">−</span><span className="num">1.13</span><span className="var">k</span></sup></span>} />
             </div>
           </FormulaCard>
 
-          <FormulaCard tag="IVM" title="In-vehicle movement probability">
+          <FormulaCard 
+            tag="IVM" 
+            title="In-vehicle movement probability"
+            info="Logistic distribution modeling passenger moves between carriages to balance densities."
+          >
             <span className="fn">p</span>(<span className="var">i,j</span>) <span className="op">=</span> <Frac top={<span><span className="fn">e</span><sup><span className="var">b</span><span className="op">+</span><span className="var">a</span><span className="op">·</span><span className="var">x</span><sub>ij</sub></sup></span>} bot={<span><span className="num">1</span><span className="op">+</span><span className="fn">e</span><sup><span className="var">b</span><span className="op">+</span><span className="var">a</span><span className="op">·</span><span className="var">x</span><sub>ij</sub></sup></span>} />
           </FormulaCard>
 
-          <div style={{ fontFamily: "var(--fs-mono)", fontSize: 10, color: "var(--muted-2)", lineHeight: 1.6, marginTop: 4 }}>
-            dₙ distance penalty · λ queue-aversion weight · qₙ live queue length · k walk-effort index
+          <div style={{ marginTop: "16px", paddingTop: "14px", borderTop: "1px solid var(--line)" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "12px" }}>
+              <span className="ico" style={{ color: "var(--teal)", display: "grid", placeItems: "center" }}><Icon name="info" size={14} /></span>
+              <h3 style={{ fontSize: "11px", fontWeight: "600", letterSpacing: "0.5px", textTransform: "uppercase", color: "var(--teal)" }}>Model Glossary</h3>
+            </div>
+            
+            <div style={{ display: "flex", flexDirection: "column", gap: "8px", maxHeight: "180px", overflowY: "auto", paddingRight: "4px" }}>
+              {[
+                { sym: "k", name: "Walk-Effort Index", desc: "Relative walking effort required along the platform." },
+                { sym: "W(k)", name: "Willingness-to-Walk", desc: "Percentage probability that a passenger decides to walk farther to avoid queues." },
+                { sym: "λ (Lambda)", name: "Queue Aversion", desc: "Delay sensitivity weight. Higher values cause passengers to walk more to bypass queues." },
+                { sym: "d_n", name: "Distance Penalty", desc: "Physical distance from the escalator to queue n: d_n = Δd · (n - 1)." },
+                { sym: "q_n", name: "Queue Length", desc: "Live passenger count queued at boarding door n." },
+                { sym: "p(i,j)", name: "Movement Probability", desc: "Probability of internal transit from carriage i to carriage j based on density." }
+              ].map((item, index) => (
+                <div key={index} style={{ background: "var(--bg-deep)", border: "1px solid var(--line)", borderRadius: "6px", padding: "8px", fontSize: "11px" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "4px", fontFamily: "var(--fs-mono)" }}>
+                    <span style={{ color: "var(--blue)", fontWeight: "bold", fontSize: "12px" }}>{item.sym}</span>
+                    <span style={{ color: "var(--text)", fontWeight: "500" }}>— {item.name}</span>
+                  </div>
+                  <div style={{ color: "var(--muted)", lineHeight: "1.4" }}>
+                    {item.desc}
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       )}
@@ -188,7 +284,7 @@ function Slider({ sym, name, value, min, max, step, unit, onChange, hint }: Slid
   );
 }
 
-function useWtwSim({ lambda, arrival, nhat, dd, speed }: { lambda: number; arrival: number; nhat: number; dd: number; speed: number }) {
+function useWtwSim({ lambda, arrival, nhat, dd, speed, isPaused, paxArrivalEnabled }: { lambda: number; arrival: number; nhat: number; dd: number; speed: number; isPaused: boolean; paxArrivalEnabled: boolean }) {
   const [q, setQ] = useState<number[]>(() => Array(nhat).fill(0));
   const [meanK, setMeanK] = useState(2.6);
   const tickRef = useRef(0);
@@ -205,6 +301,7 @@ function useWtwSim({ lambda, arrival, nhat, dd, speed }: { lambda: number; arriv
   }
 
   useEffect(() => {
+    if (isPaused) return;
     const id = setInterval(() => {
       tickRef.current++;
       const board = tickRef.current % 8 === 0;
@@ -212,21 +309,24 @@ function useWtwSim({ lambda, arrival, nhat, dd, speed }: { lambda: number; arriv
         let q2 = prev.slice(0, nhat);
         while (q2.length < nhat) q2.push(0);
         if (board) q2 = q2.map((v) => Math.max(0, v - 6));
-        const arrivals = Math.max(1, Math.round(arrival / 4));
+        
+        const arrivals = paxArrivalEnabled ? Math.max(1, Math.round(arrival / 4)) : 0;
         let ksum = 0;
-        for (let a = 0; a < arrivals; a++) {
-          const k = clamp(2.7 + randn() * 1.5, 0, 6);
-          ksum += k;
-          const W = Wk(k);
-          const N = chooseQueue(W, lambda, dd, q2, nhat);
-          q2[N - 1] = (q2[N - 1] || 0) + 1;
+        if (arrivals > 0) {
+          for (let a = 0; a < arrivals; a++) {
+            const k = clamp(2.7 + randn() * 1.5, 0, 6);
+            ksum += k;
+            const W = Wk(k);
+            const N = chooseQueue(W, lambda, dd, q2, nhat);
+            q2[N - 1] = (q2[N - 1] || 0) + 1;
+          }
+          setMeanK((m) => lerp(m, ksum / arrivals, 0.4));
         }
-        setMeanK((m) => lerp(m, ksum / arrivals, 0.4));
         return q2.map((v) => Math.round(v));
       });
     }, clamp(1100 / speed, 450, 2400));
     return () => clearInterval(id);
-  }, [lambda, arrival, nhat, dd, speed]);
+  }, [lambda, arrival, nhat, dd, speed, isPaused, paxArrivalEnabled]);
 
   return { q, meanK };
 }
@@ -243,7 +343,7 @@ function SimKpi({ label, val, unit, accent, sub }: SimKpiProps) {
   );
 }
 
-export default function WtwSimulator({ tweaks }: { tweaks: { tickSpeed: number; heatIntensity: number } }) {
+export default function WtwSimulator({ tweaks }: { tweaks: { tickSpeed: number; heatIntensity: number; isPaused: boolean; paxArrivalEnabled: boolean } }) {
   const [lambda, setLambda] = useState(1.0);
   const [arrival, setArrival] = useState(34);
   const [nhat, setNhat] = useState(20);
@@ -251,8 +351,7 @@ export default function WtwSimulator({ tweaks }: { tweaks: { tickSpeed: number; 
   const [refOpen, setRefOpen] = useState(true);
   const [preset, setPreset] = useState("peak");
   const speed = tweaks.tickSpeed ?? 1;
-
-  const { q, meanK } = useWtwSim({ lambda, arrival, nhat, dd, speed });
+  const { q, meanK } = useWtwSim({ lambda, arrival, nhat, dd, speed, isPaused: tweaks.isPaused, paxArrivalEnabled: tweaks.paxArrivalEnabled });
 
   const applyPreset = (p: string) => {
     setPreset(p);

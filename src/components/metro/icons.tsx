@@ -34,6 +34,9 @@ export default function Icon({ name, size = 16, sw = 1.7 }: IconProps) {
     flow: <><circle cx="6" cy="6" r="2.2" /><circle cx="18" cy="18" r="2.2" /><path d="M6 8.2v3.8a4 4 0 0 0 4 4h5.8" /></>,
     warn: <><path d="M12 3l9.5 16.5h-19L12 3Z" /><path d="M12 10v4M12 17.5v.01" /></>,
     walk: <><circle cx="13" cy="4.5" r="1.6" /><path d="M11 9l2-1 2 3 2 1M11 9l-1.5 4 2 2 .5 4M11 9l-2.5 3" /></>,
+    play: <polygon points="5 3 19 12 5 21 5 3" />,
+    pause: <><rect x="6" y="4" width="4" height="16" rx="1" /><rect x="14" y="4" width="4" height="16" rx="1" /></>,
+    info: <><circle cx="12" cy="12" r="10" /><path d="M12 16v-4M12 8h.01" /></>,
   };
 
   return <svg {...p}>{paths[name] ?? null}</svg>;
