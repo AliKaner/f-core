@@ -120,31 +120,41 @@ function Frac({ top, bot }: { top: React.ReactNode; bot: React.ReactNode }) {
   return <span className="frac"><span className="top">{top}</span><span className="bot">{bot}</span></span>;
 }
 
-function InfoTooltip({ text }: { text: string }) {
+function FormulaCard({ tag, title, children, calib, info }: { tag: string; title: string; children: React.ReactNode; calib?: string; info?: string }) {
   const [hovered, setHovered] = useState(false);
+
   return (
-    <span 
-      style={{ position: "relative", display: "inline-flex", alignItems: "center", cursor: "help", marginLeft: "6px" }}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-    >
-      <span style={{ color: "var(--muted-2)", display: "inline-flex", opacity: 0.85 }}>
-        <Icon name="info" size={12} />
-      </span>
-      {hovered && (
-        <span style={{
+    <div className="formula-card" style={{ position: "relative" }}>
+      <div className="fc-h" style={{ display: "flex", alignItems: "center" }}>
+        <span className="fc-tag">{tag}</span>
+        <span className="fc-title" style={{ display: "inline-flex", alignItems: "center" }}>
+          {title}
+          {info && (
+            <span 
+              style={{ display: "inline-flex", alignItems: "center", cursor: "help", marginLeft: "6px" }}
+              onMouseEnter={() => setHovered(true)}
+              onMouseLeave={() => setHovered(false)}
+            >
+              <span style={{ color: "var(--muted-2)", display: "inline-flex", opacity: 0.85 }}>
+                <Icon name="info" size={12} />
+              </span>
+            </span>
+          )}
+        </span>
+      </div>
+
+      {hovered && info && (
+        <div style={{
           position: "absolute",
-          top: "100%",
-          left: "auto",
-          right: "0",
-          marginTop: "6px",
+          top: "40px",
+          left: "12px",
+          right: "12px",
           background: "#0c1c2d",
           border: "1px solid var(--blue)",
           color: "var(--text)",
           padding: "8px 12px",
           borderRadius: "6px",
           fontSize: "11px",
-          width: "240px",
           lineHeight: "1.4",
           boxShadow: "0 6px 16px rgba(0,0,0,0.6)",
           zIndex: 9999,
@@ -154,23 +164,10 @@ function InfoTooltip({ text }: { text: string }) {
           textAlign: "left",
           whiteSpace: "normal"
         }}>
-          {text}
-        </span>
+          {info}
+        </div>
       )}
-    </span>
-  );
-}
 
-function FormulaCard({ tag, title, children, calib, info }: { tag: string; title: string; children: React.ReactNode; calib?: string; info?: string }) {
-  return (
-    <div className="formula-card">
-      <div className="fc-h" style={{ display: "flex", alignItems: "center" }}>
-        <span className="fc-tag">{tag}</span>
-        <span className="fc-title" style={{ display: "inline-flex", alignItems: "center" }}>
-          {title}
-          {info && <InfoTooltip text={info} />}
-        </span>
-      </div>
       <div className="math">{children}</div>
       {calib && <div className="calibchip">{calib}</div>}
     </div>
